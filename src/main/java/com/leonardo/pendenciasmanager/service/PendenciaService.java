@@ -1,17 +1,17 @@
 package com.leonardo.pendenciasmanager.service;
 
-import com.leonardo.pendenciasmanager.dto.PendenciaRequestDTO;
-import com.leonardo.pendenciasmanager.dto.PendenciaResponseDTO;
+import com.leonardo.pendenciasmanager.dto.Request.PendenciaRequestDTO;
+import com.leonardo.pendenciasmanager.dto.Response.PendenciaResponseDTO;
 import com.leonardo.pendenciasmanager.entity.Pendencia;
 import com.leonardo.pendenciasmanager.entity.Usuario;
+import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
 import com.leonardo.pendenciasmanager.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.leonardo.pendenciasmanager.enums.StatusPendencia;
-import java.time.LocalDate;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 

@@ -1,12 +1,12 @@
 package com.leonardo.pendenciasmanager.service;
 
-import com.leonardo.pendenciasmanager.dto.UsuarioRequestDTO;
-import com.leonardo.pendenciasmanager.dto.UsuarioResponseDTO;
+import com.leonardo.pendenciasmanager.dto.Request.UsuarioRequestDTO;
+import com.leonardo.pendenciasmanager.dto.Response.UsuarioResponseDTO;
 import com.leonardo.pendenciasmanager.entity.Usuario;
+import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.leonardo.pendenciasmanager.exception.BusinessException;
 
 import java.util.List;
 import java.util.stream.Collectors;

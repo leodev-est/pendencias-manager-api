@@ -1,7 +1,7 @@
 package com.leonardo.pendenciasmanager.controller;
 
-import com.leonardo.pendenciasmanager.dto.UsuarioRequestDTO;
-import com.leonardo.pendenciasmanager.dto.UsuarioResponseDTO;
+import com.leonardo.pendenciasmanager.dto.Request.UsuarioRequestDTO;
+import com.leonardo.pendenciasmanager.dto.Response.UsuarioResponseDTO;
 import com.leonardo.pendenciasmanager.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

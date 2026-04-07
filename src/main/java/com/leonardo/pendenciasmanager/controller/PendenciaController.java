@@ -1,7 +1,7 @@
 package com.leonardo.pendenciasmanager.controller;
 
-import com.leonardo.pendenciasmanager.dto.PendenciaRequestDTO;
-import com.leonardo.pendenciasmanager.dto.PendenciaResponseDTO;
+import com.leonardo.pendenciasmanager.dto.Request.PendenciaRequestDTO;
+import com.leonardo.pendenciasmanager.dto.Response.PendenciaResponseDTO;
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import com.leonardo.pendenciasmanager.service.PendenciaService;
 import jakarta.validation.Valid;

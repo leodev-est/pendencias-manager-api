@@ -1,4 +1,4 @@
-package com.leonardo.pendenciasmanager.dto;
+package com.leonardo.pendenciasmanager.dto.Request;
 
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import jakarta.validation.constraints.NotBlank;

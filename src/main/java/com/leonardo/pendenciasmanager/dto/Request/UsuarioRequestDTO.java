@@ -1,4 +1,4 @@
-package com.leonardo.pendenciasmanager.dto;
+package com.leonardo.pendenciasmanager.dto.Request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

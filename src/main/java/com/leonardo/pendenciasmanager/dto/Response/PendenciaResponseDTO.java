@@ -1,4 +1,4 @@
-package com.leonardo.pendenciasmanager.dto;
+package com.leonardo.pendenciasmanager.dto.Response;
 
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 
