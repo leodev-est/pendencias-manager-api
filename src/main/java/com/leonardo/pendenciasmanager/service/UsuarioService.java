@@ -7,6 +7,7 @@ import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
 import com.leonardo.pendenciasmanager.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +22,9 @@ public class UsuarioService {
     @Autowired
     private PendenciaRepository pendenciaRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     public UsuarioResponseDTO criar(UsuarioRequestDTO dto) {
         if (repository.existsByEmail(dto.getEmail())) {
             throw new BusinessException("Já existe um usuário com esse email.");
@@ -29,7 +33,7 @@ public class UsuarioService {
         Usuario usuario = new Usuario();
         usuario.setNome(dto.getNome());
         usuario.setEmail(dto.getEmail());
-        usuario.setSenha(dto.getSenha());
+        usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         usuario.setCargo(dto.getCargo());
 
         Usuario salvo = repository.save(usuario);
@@ -63,7 +67,7 @@ public class UsuarioService {
 
         usuario.setNome(dto.getNome());
         usuario.setEmail(dto.getEmail());
-        usuario.setSenha(dto.getSenha());
+        usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         usuario.setCargo(dto.getCargo());
 
         Usuario atualizado = repository.save(usuario);

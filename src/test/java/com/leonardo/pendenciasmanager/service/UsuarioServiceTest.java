@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +33,9 @@ class UsuarioServiceTest {
     @Mock
     private PendenciaRepository pendenciaRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UsuarioService service;
 
@@ -51,6 +55,7 @@ class UsuarioServiceTest {
         usuarioSalvo.setCargo(dto.getCargo());
 
         when(repository.existsByEmail(dto.getEmail())).thenReturn(false);
+        when(passwordEncoder.encode(dto.getSenha())).thenReturn("senha-criptografada");
         when(repository.save(any(Usuario.class))).thenReturn(usuarioSalvo);
 
         UsuarioResponseDTO response = service.criar(dto);
@@ -142,6 +147,7 @@ class UsuarioServiceTest {
 
         when(repository.findById(1L)).thenReturn(Optional.of(usuarioExistente));
         when(repository.findByEmail(dto.getEmail())).thenReturn(Optional.of(usuarioExistente));
+        when(passwordEncoder.encode(dto.getSenha())).thenReturn("senha-criptografada");
         when(repository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UsuarioResponseDTO response = service.atualizar(1L, dto);
