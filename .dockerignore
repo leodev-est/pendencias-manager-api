@@ -1,0 +1,11 @@
+.git
+.gitignore
+.m2repo
+target
+.idea
+.vscode
+README.md
+HELP.md
+swagger-preview.png
+spring-run.out.log
+spring-run.err.log
