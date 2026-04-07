@@ -8,12 +8,16 @@ import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
 import com.leonardo.pendenciasmanager.repository.UsuarioRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -40,56 +44,64 @@ class PendenciaServiceTest {
     @InjectMocks
     private PendenciaService service;
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
-    void criarDeveSalvarPendenciaQuandoResponsavelExiste() {
-        Usuario responsavel = criarUsuario(10L, "Maria");
+    void criarDeveSalvarPendenciaParaUsuarioAutenticado() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
         PendenciaRequestDTO dto = criarPendenciaRequest();
+        Pendencia pendenciaSalva = criarPendencia(1L, dto, usuarioAutenticado);
 
-        Pendencia pendenciaSalva = criarPendencia(1L, dto, responsavel);
-
-        when(usuarioRepository.findById(dto.getResponsavelId())).thenReturn(Optional.of(responsavel));
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
         when(pendenciaRepository.save(any(Pendencia.class))).thenReturn(pendenciaSalva);
 
         PendenciaResponseDTO response = service.criar(dto);
 
         assertEquals(1L, response.getId());
-        assertEquals(dto.getTitulo(), response.getTitulo());
-        assertEquals(dto.getStatus(), response.getStatus());
-        assertEquals(responsavel.getId(), response.getResponsavelId());
+        assertEquals(usuarioAutenticado.getId(), response.getResponsavelId());
         assertEquals("Maria", response.getResponsavelNome());
     }
 
     @Test
-    void criarDeveLancarExcecaoQuandoResponsavelNaoExiste() {
+    void criarDeveLancarExcecaoQuandoUsuarioAutenticadoNaoExistir() {
         PendenciaRequestDTO dto = criarPendenciaRequest();
-        when(usuarioRepository.findById(dto.getResponsavelId())).thenReturn(Optional.empty());
+        autenticar("maria@email.com");
+        when(usuarioRepository.findByEmail("maria@email.com")).thenReturn(Optional.empty());
 
-        BusinessException exception = assertThrows(BusinessException.class, () -> service.criar(dto));
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> service.criar(dto));
 
-        assertTrue(exception.getMessage().toLowerCase().contains("respons"));
+        assertTrue(exception.getMessage().toLowerCase().contains("autenticado"));
         verify(pendenciaRepository, never()).save(any(Pendencia.class));
     }
 
     @Test
-    void listarDeveRetornarPendenciasMapeadas() {
-        Usuario responsavel = criarUsuario(10L, "Maria");
-        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), responsavel);
+    void listarDeveRetornarApenasPendenciasDoUsuarioAutenticado() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
-        when(pendenciaRepository.findAll()).thenReturn(List.of(pendencia));
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
+        when(pendenciaRepository.findByUsuarioId(10L)).thenReturn(List.of(pendencia));
 
         List<PendenciaResponseDTO> response = service.listar();
 
         assertEquals(1, response.size());
-        assertEquals("Corrigir bug", response.get(0).getTitulo());
         assertEquals("Maria", response.get(0).getResponsavelNome());
     }
 
     @Test
-    void listarPorStatusDeveRetornarPendenciasFiltradas() {
-        Usuario responsavel = criarUsuario(10L, "Maria");
-        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), responsavel);
+    void listarPorStatusDeveFiltrarPendenciasDoUsuarioAutenticado() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
-        when(pendenciaRepository.findByStatus(StatusPendencia.PENDENTE)).thenReturn(List.of(pendencia));
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
+        when(pendenciaRepository.findByResponsavelIdAndStatus(10L, StatusPendencia.PENDENTE))
+                .thenReturn(List.of(pendencia));
 
         List<PendenciaResponseDTO> response = service.listarPorStatus(StatusPendencia.PENDENTE);
 
@@ -98,60 +110,65 @@ class PendenciaServiceTest {
     }
 
     @Test
-    void listarPorResponsavelDeveRetornarPendenciasDoResponsavel() {
-        Usuario responsavel = criarUsuario(10L, "Maria");
-        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), responsavel);
+    void listarVencidasDeveConsultarDataAtualEStatusConcluidaDoUsuarioAutenticado() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
-        when(pendenciaRepository.findByResponsavelId(10L)).thenReturn(List.of(pendencia));
-
-        List<PendenciaResponseDTO> response = service.listarPorResponsavel(10L);
-
-        assertEquals(1, response.size());
-        assertEquals(10L, response.get(0).getResponsavelId());
-    }
-
-    @Test
-    void listarVencidasDeveConsultarDataAtualEStatusConcluida() {
-        Usuario responsavel = criarUsuario(10L, "Maria");
-        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), responsavel);
-
-        when(pendenciaRepository.findByDataVencimentoBeforeAndStatusNot(any(LocalDate.class), any(StatusPendencia.class)))
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
+        when(pendenciaRepository.findByResponsavelIdAndDataVencimentoBeforeAndStatusNot(any(Long.class), any(LocalDate.class), any(StatusPendencia.class)))
                 .thenReturn(List.of(pendencia));
 
         List<PendenciaResponseDTO> response = service.listarVencidas();
 
+        ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
         ArgumentCaptor<LocalDate> dataCaptor = ArgumentCaptor.forClass(LocalDate.class);
         ArgumentCaptor<StatusPendencia> statusCaptor = ArgumentCaptor.forClass(StatusPendencia.class);
-        verify(pendenciaRepository).findByDataVencimentoBeforeAndStatusNot(dataCaptor.capture(), statusCaptor.capture());
+        verify(pendenciaRepository).findByResponsavelIdAndDataVencimentoBeforeAndStatusNot(
+                idCaptor.capture(),
+                dataCaptor.capture(),
+                statusCaptor.capture()
+        );
 
+        assertEquals(10L, idCaptor.getValue());
         assertNotNull(dataCaptor.getValue());
         assertEquals(StatusPendencia.CONCLUIDA, statusCaptor.getValue());
         assertEquals(1, response.size());
     }
 
     @Test
-    void listarProximos7DiasDeveConsultarIntervaloCorreto() {
-        Usuario responsavel = criarUsuario(10L, "Maria");
-        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), responsavel);
+    void listarProximos7DiasDeveConsultarIntervaloCorretoDoUsuarioAutenticado() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
-        when(pendenciaRepository.findByDataVencimentoBetween(any(LocalDate.class), any(LocalDate.class)))
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
+        when(pendenciaRepository.findByResponsavelIdAndDataVencimentoBetween(any(Long.class), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(List.of(pendencia));
 
         List<PendenciaResponseDTO> response = service.listarProximos7Dias();
 
+        ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
         ArgumentCaptor<LocalDate> inicioCaptor = ArgumentCaptor.forClass(LocalDate.class);
         ArgumentCaptor<LocalDate> fimCaptor = ArgumentCaptor.forClass(LocalDate.class);
-        verify(pendenciaRepository).findByDataVencimentoBetween(inicioCaptor.capture(), fimCaptor.capture());
+        verify(pendenciaRepository).findByResponsavelIdAndDataVencimentoBetween(
+                idCaptor.capture(),
+                inicioCaptor.capture(),
+                fimCaptor.capture()
+        );
 
+        assertEquals(10L, idCaptor.getValue());
         assertEquals(inicioCaptor.getValue().plusDays(7), fimCaptor.getValue());
         assertEquals(1, response.size());
     }
 
     @Test
-    void buscarPorIdDeveRetornarPendenciaQuandoExistir() {
-        Usuario responsavel = criarUsuario(10L, "Maria");
-        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), responsavel);
+    void buscarPorIdDeveRetornarPendenciaQuandoPertencerAoUsuarioAutenticado() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
         when(pendenciaRepository.findById(1L)).thenReturn(Optional.of(pendencia));
 
         PendenciaResponseDTO response = service.buscarPorId(1L);
@@ -161,60 +178,76 @@ class PendenciaServiceTest {
     }
 
     @Test
-    void buscarPorIdDeveLancarExcecaoQuandoNaoExistir() {
+    void buscarPorIdDeveLancarExcecaoQuandoPendenciaNaoExistir() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
         when(pendenciaRepository.findById(99L)).thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(BusinessException.class, () -> service.buscarPorId(99L));
 
-        assertTrue(exception.getMessage().toLowerCase().contains("pend"));
+        assertTrue(exception.getMessage().toLowerCase().contains("pendencia"));
     }
 
     @Test
-    void atualizarDeveSalvarPendenciaAtualizada() {
-        Usuario responsavelAntigo = criarUsuario(1L, "Joao");
-        Usuario novoResponsavel = criarUsuario(2L, "Maria");
-        Pendencia pendenciaExistente = criarPendencia(1L, criarPendenciaRequest(), responsavelAntigo);
+    void buscarPorIdDeveLancarExcecaoQuandoPendenciaForDeOutroUsuario() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com");
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), outroUsuario);
+
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
+        when(pendenciaRepository.findById(1L)).thenReturn(Optional.of(pendencia));
+
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> service.buscarPorId(1L));
+
+        assertTrue(exception.getMessage().toLowerCase().contains("acesso negado"));
+    }
+
+    @Test
+    void atualizarDeveSalvarPendenciaAtualizadaQuandoPertencerAoUsuarioAutenticado() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Pendencia pendenciaExistente = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
         PendenciaRequestDTO dto = criarPendenciaRequest();
-        dto.setResponsavelId(2L);
         dto.setTitulo("Atualizada");
 
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
         when(pendenciaRepository.findById(1L)).thenReturn(Optional.of(pendenciaExistente));
-        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(novoResponsavel));
         when(pendenciaRepository.save(any(Pendencia.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PendenciaResponseDTO response = service.atualizar(1L, dto);
 
         assertEquals("Atualizada", response.getTitulo());
-        assertEquals(2L, response.getResponsavelId());
-        assertEquals("Maria", response.getResponsavelNome());
+        assertEquals(10L, response.getResponsavelId());
     }
 
     @Test
-    void atualizarDeveLancarExcecaoQuandoPendenciaNaoExistir() {
-        when(pendenciaRepository.findById(1L)).thenReturn(Optional.empty());
+    void atualizarDeveLancarExcecaoQuandoPendenciaForDeOutroUsuario() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com");
+        Pendencia pendenciaExistente = criarPendencia(1L, criarPendenciaRequest(), outroUsuario);
 
-        BusinessException exception = assertThrows(BusinessException.class, () -> service.atualizar(1L, criarPendenciaRequest()));
-
-        assertTrue(exception.getMessage().toLowerCase().contains("pend"));
-        verify(usuarioRepository, never()).findById(any(Long.class));
-    }
-
-    @Test
-    void atualizarDeveLancarExcecaoQuandoResponsavelNaoExistir() {
-        Pendencia pendenciaExistente = criarPendencia(1L, criarPendenciaRequest(), criarUsuario(1L, "Joao"));
-
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
         when(pendenciaRepository.findById(1L)).thenReturn(Optional.of(pendenciaExistente));
-        when(usuarioRepository.findById(10L)).thenReturn(Optional.empty());
 
-        BusinessException exception = assertThrows(BusinessException.class, () -> service.atualizar(1L, criarPendenciaRequest()));
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> service.atualizar(1L, criarPendenciaRequest())
+        );
 
-        assertTrue(exception.getMessage().toLowerCase().contains("respons"));
+        assertTrue(exception.getMessage().toLowerCase().contains("acesso negado"));
         verify(pendenciaRepository, never()).save(any(Pendencia.class));
     }
 
     @Test
-    void deletarDeveRemoverPendenciaQuandoExistir() {
-        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), criarUsuario(10L, "Maria"));
+    void deletarDeveRemoverPendenciaQuandoPertencerAoUsuarioAutenticado() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
+
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
         when(pendenciaRepository.findById(1L)).thenReturn(Optional.of(pendencia));
 
         service.deletar(1L);
@@ -223,13 +256,25 @@ class PendenciaServiceTest {
     }
 
     @Test
-    void deletarDeveLancarExcecaoQuandoPendenciaNaoExistir() {
-        when(pendenciaRepository.findById(1L)).thenReturn(Optional.empty());
+    void deletarDeveLancarExcecaoQuandoPendenciaForDeOutroUsuario() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com");
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), outroUsuario);
 
-        BusinessException exception = assertThrows(BusinessException.class, () -> service.deletar(1L));
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
+        when(pendenciaRepository.findById(1L)).thenReturn(Optional.of(pendencia));
 
-        assertTrue(exception.getMessage().toLowerCase().contains("pend"));
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class, () -> service.deletar(1L));
+
+        assertTrue(exception.getMessage().toLowerCase().contains("acesso negado"));
         verify(pendenciaRepository, never()).delete(any(Pendencia.class));
+    }
+
+    private void autenticar(String email) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(email, null, List.of())
+        );
     }
 
     private PendenciaRequestDTO criarPendenciaRequest() {
@@ -240,15 +285,14 @@ class PendenciaServiceTest {
         dto.setDataVencimento(LocalDate.of(2026, 4, 10));
         dto.setPrioridade("Alta");
         dto.setOrigem("Sistema");
-        dto.setResponsavelId(10L);
         return dto;
     }
 
-    private Usuario criarUsuario(Long id, String nome) {
+    private Usuario criarUsuario(Long id, String nome, String email) {
         Usuario usuario = new Usuario();
         usuario.setId(id);
         usuario.setNome(nome);
-        usuario.setEmail(nome.toLowerCase() + "@email.com");
+        usuario.setEmail(email);
         usuario.setCargo("Analista");
         return usuario;
     }

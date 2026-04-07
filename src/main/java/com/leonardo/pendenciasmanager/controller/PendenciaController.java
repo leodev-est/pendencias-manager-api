@@ -42,14 +42,9 @@ public class PendenciaController {
         service.deletar(id);
     }
 
-        @GetMapping("/status")
+    @GetMapping("/status")
     public List<PendenciaResponseDTO> listarPorStatus(@RequestParam StatusPendencia status) {
         return service.listarPorStatus(status);
-    }
-
-    @GetMapping("/responsavel/{responsavelId}")
-    public List<PendenciaResponseDTO> listarPorResponsavel(@PathVariable Long responsavelId) {
-        return service.listarPorResponsavel(responsavelId);
     }
 
     @GetMapping("/vencidas")

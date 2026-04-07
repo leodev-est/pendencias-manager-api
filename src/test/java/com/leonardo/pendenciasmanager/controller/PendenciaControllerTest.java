@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -134,15 +135,6 @@ class PendenciaControllerTest {
     }
 
     @Test
-    void listarPorResponsavelDeveRetornarPendenciasDoResponsavel() throws Exception {
-        when(pendenciaService.listarPorResponsavel(10L)).thenReturn(List.of(criarResponse()));
-
-        mockMvc.perform(get("/pendencias/responsavel/10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].responsavelId").value(10));
-    }
-
-    @Test
     void listarVencidasDeveRetornarPendencias() throws Exception {
         when(pendenciaService.listarVencidas()).thenReturn(List.of(criarResponse()));
 
@@ -171,6 +163,16 @@ class PendenciaControllerTest {
     }
 
     @Test
+    void endpointDeveRetornarForbiddenQuandoServiceLancarAccessDeniedException() throws Exception {
+        when(pendenciaService.buscarPorId(99L)).thenThrow(new AccessDeniedException("Acesso negado a esta pendencia."));
+
+        mockMvc.perform(get("/pendencias/99"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensagem").value("Acesso negado a esta pendencia."))
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
     void deletarDeveRetornarBadRequestQuandoServiceLancarBusinessException() throws Exception {
         doThrow(new BusinessException("Pendencia nao encontrada")).when(pendenciaService).deletar(99L);
 
@@ -187,7 +189,6 @@ class PendenciaControllerTest {
         request.setDataVencimento(LocalDate.of(2026, 4, 10));
         request.setPrioridade("Alta");
         request.setOrigem("Sistema");
-        request.setResponsavelId(10L);
         return request;
     }
 

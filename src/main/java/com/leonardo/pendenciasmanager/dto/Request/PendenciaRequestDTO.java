@@ -24,7 +24,4 @@ public class PendenciaRequestDTO {
     private String prioridade;
 
     private String origem;
-
-    @NotNull
-    private Long responsavelId;
 }

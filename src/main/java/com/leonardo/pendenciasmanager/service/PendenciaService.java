@@ -9,6 +9,9 @@ import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
 import com.leonardo.pendenciasmanager.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -25,8 +28,7 @@ public class PendenciaService {
     private UsuarioRepository usuarioRepository;
 
     public PendenciaResponseDTO criar(PendenciaRequestDTO dto) {
-        Usuario responsavel = usuarioRepository.findById(dto.getResponsavelId())
-                .orElseThrow(() -> new BusinessException("Responsável não encontrado."));
+        Usuario usuarioAutenticado = getUsuarioAutenticado();
 
         Pendencia pendencia = new Pendencia();
         pendencia.setTitulo(dto.getTitulo());
@@ -35,18 +37,98 @@ public class PendenciaService {
         pendencia.setDataVencimento(dto.getDataVencimento());
         pendencia.setPrioridade(dto.getPrioridade());
         pendencia.setOrigem(dto.getOrigem());
-        pendencia.setResponsavel(responsavel);
+        pendencia.setResponsavel(usuarioAutenticado);
 
-        Pendencia salva = pendenciaRepository.save(pendencia);
-
-        return toResponseDTO(salva);
+        return toResponseDTO(pendenciaRepository.save(pendencia));
     }
 
     public List<PendenciaResponseDTO> listar() {
-        return pendenciaRepository.findAll()
+        Usuario usuarioAutenticado = getUsuarioAutenticado();
+
+        return pendenciaRepository.findByUsuarioId(usuarioAutenticado.getId())
                 .stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    public PendenciaResponseDTO buscarPorId(Long id) {
+        return toResponseDTO(buscarPendenciaDoUsuario(id));
+    }
+
+    public PendenciaResponseDTO atualizar(Long id, PendenciaRequestDTO dto) {
+        Pendencia pendencia = buscarPendenciaDoUsuario(id);
+
+        pendencia.setTitulo(dto.getTitulo());
+        pendencia.setDescricao(dto.getDescricao());
+        pendencia.setStatus(dto.getStatus());
+        pendencia.setDataVencimento(dto.getDataVencimento());
+        pendencia.setPrioridade(dto.getPrioridade());
+        pendencia.setOrigem(dto.getOrigem());
+
+        return toResponseDTO(pendenciaRepository.save(pendencia));
+    }
+
+    public void deletar(Long id) {
+        pendenciaRepository.delete(buscarPendenciaDoUsuario(id));
+    }
+
+    public List<PendenciaResponseDTO> listarPorStatus(StatusPendencia status) {
+        Usuario usuarioAutenticado = getUsuarioAutenticado();
+
+        return pendenciaRepository.findByResponsavelIdAndStatus(usuarioAutenticado.getId(), status)
+                .stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<PendenciaResponseDTO> listarVencidas() {
+        Usuario usuarioAutenticado = getUsuarioAutenticado();
+        LocalDate hoje = LocalDate.now();
+
+        return pendenciaRepository
+                .findByResponsavelIdAndDataVencimentoBeforeAndStatusNot(
+                        usuarioAutenticado.getId(),
+                        hoje,
+                        StatusPendencia.CONCLUIDA
+                )
+                .stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<PendenciaResponseDTO> listarProximos7Dias() {
+        Usuario usuarioAutenticado = getUsuarioAutenticado();
+        LocalDate hoje = LocalDate.now();
+        LocalDate limite = hoje.plusDays(7);
+
+        return pendenciaRepository
+                .findByResponsavelIdAndDataVencimentoBetween(usuarioAutenticado.getId(), hoje, limite)
+                .stream()
+                .map(this::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    private Usuario getUsuarioAutenticado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            throw new AccessDeniedException("Usuario nao autenticado.");
+        }
+
+        return usuarioRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new AccessDeniedException("Usuario autenticado nao encontrado."));
+    }
+
+    private Pendencia buscarPendenciaDoUsuario(Long id) {
+        Usuario usuarioAutenticado = getUsuarioAutenticado();
+        Pendencia pendencia = pendenciaRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Pendencia nao encontrada."));
+
+        if (pendencia.getResponsavel() == null || !usuarioAutenticado.getId().equals(pendencia.getResponsavel().getId())) {
+            throw new AccessDeniedException("Acesso negado a esta pendencia.");
+        }
+
+        return pendencia;
     }
 
     private PendenciaResponseDTO toResponseDTO(Pendencia pendencia) {
@@ -62,73 +144,4 @@ public class PendenciaService {
         dto.setResponsavelNome(pendencia.getResponsavel().getNome());
         return dto;
     }
-    public List<PendenciaResponseDTO> listarPorStatus(com.leonardo.pendenciasmanager.enums.StatusPendencia status) {
-    return pendenciaRepository.findByStatus(status)
-            .stream()
-            .map(this::toResponseDTO)
-            .collect(Collectors.toList());
-    }
-
-    public List<PendenciaResponseDTO> listarPorResponsavel(Long responsavelId) {
-        return pendenciaRepository.findByResponsavelId(responsavelId)
-                .stream()
-                .map(this::toResponseDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<PendenciaResponseDTO> listarVencidas() {
-        LocalDate hoje = LocalDate.now();
-
-        return pendenciaRepository
-                .findByDataVencimentoBeforeAndStatusNot(hoje, StatusPendencia.CONCLUIDA)
-                .stream()
-                .map(this::toResponseDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<PendenciaResponseDTO> listarProximos7Dias() {
-        LocalDate hoje = LocalDate.now();
-        LocalDate limite = hoje.plusDays(7);
-
-        return pendenciaRepository.findByDataVencimentoBetween(hoje, limite)
-                .stream()
-                .map(this::toResponseDTO)
-                .collect(Collectors.toList());
-    }
-
-    public PendenciaResponseDTO buscarPorId(Long id) {
-    Pendencia pendencia = pendenciaRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("Pendência não encontrada."));
-
-    return toResponseDTO(pendencia);
-    }
-
-    public PendenciaResponseDTO atualizar(Long id, PendenciaRequestDTO dto) {
-    Pendencia pendencia = pendenciaRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("Pendência não encontrada."));
-
-    Usuario responsavel = usuarioRepository.findById(dto.getResponsavelId())
-            .orElseThrow(() -> new BusinessException("Responsável não encontrado."));
-
-    pendencia.setTitulo(dto.getTitulo());
-    pendencia.setDescricao(dto.getDescricao());
-    pendencia.setStatus(dto.getStatus());
-    pendencia.setDataVencimento(dto.getDataVencimento());
-    pendencia.setPrioridade(dto.getPrioridade());
-    pendencia.setOrigem(dto.getOrigem());
-    pendencia.setResponsavel(responsavel);
-
-    Pendencia atualizada = pendenciaRepository.save(pendencia);
-
-    return toResponseDTO(atualizada);
-    }
-
-    public void deletar(Long id) {
-    Pendencia pendencia = pendenciaRepository.findById(id)
-            .orElseThrow(() -> new BusinessException("Pendência não encontrada."));
-
-    pendenciaRepository.delete(pendencia);
-    }
-
-    
 }

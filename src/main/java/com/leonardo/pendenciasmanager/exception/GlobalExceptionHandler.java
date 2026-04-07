@@ -3,6 +3,7 @@ package com.leonardo.pendenciasmanager.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -48,6 +49,16 @@ public class GlobalExceptionHandler {
         erro.put("mensagem", ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDeniedException(AccessDeniedException ex) {
+        Map<String, Object> erro = new HashMap<>();
+        erro.put("timestamp", LocalDateTime.now());
+        erro.put("status", 403);
+        erro.put("mensagem", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(erro);
     }
 
     @ExceptionHandler(Exception.class)
