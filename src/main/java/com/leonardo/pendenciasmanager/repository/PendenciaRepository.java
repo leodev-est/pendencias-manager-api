@@ -13,6 +13,8 @@ public interface PendenciaRepository extends JpaRepository<Pendencia, Long> {
 
     List<Pendencia> findByResponsavelId(Long responsavelId);
 
+    boolean existsByResponsavelId(Long responsavelId);
+
     List<Pendencia> findByDataVencimentoBeforeAndStatusNot(LocalDate data, StatusPendencia status);
 
     List<Pendencia> findByDataVencimentoBetween(LocalDate dataInicio, LocalDate dataFim);

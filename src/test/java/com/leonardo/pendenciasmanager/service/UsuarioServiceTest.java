@@ -4,6 +4,7 @@ import com.leonardo.pendenciasmanager.dto.Request.UsuarioRequestDTO;
 import com.leonardo.pendenciasmanager.dto.Response.UsuarioResponseDTO;
 import com.leonardo.pendenciasmanager.entity.Usuario;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
+import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
 import com.leonardo.pendenciasmanager.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,6 +28,9 @@ class UsuarioServiceTest {
 
     @Mock
     private UsuarioRepository repository;
+
+    @Mock
+    private PendenciaRepository pendenciaRepository;
 
     @InjectMocks
     private UsuarioService service;
@@ -92,5 +97,124 @@ class UsuarioServiceTest {
         assertEquals("Ana", response.get(0).getNome());
         assertEquals("bruno@email.com", response.get(1).getEmail());
         assertEquals("Gestor", response.get(1).getCargo());
+    }
+
+    @Test
+    void buscarPorIdDeveRetornarUsuarioQuandoExistir() {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        usuario.setNome("Ana");
+        usuario.setEmail("ana@email.com");
+        usuario.setCargo("Analista");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        UsuarioResponseDTO response = service.buscarPorId(1L);
+
+        assertEquals(1L, response.getId());
+        assertEquals("Ana", response.getNome());
+        assertEquals("ana@email.com", response.getEmail());
+    }
+
+    @Test
+    void buscarPorIdDeveLancarExcecaoQuandoUsuarioNaoExistir() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.buscarPorId(99L));
+
+        assertTrue(exception.getMessage().toLowerCase().contains("usuario"));
+    }
+
+    @Test
+    void atualizarDeveAtualizarUsuarioQuandoEmailNaoPertencerAOutroUsuario() {
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
+        dto.setNome("Ana Maria");
+        dto.setEmail("ana@email.com");
+        dto.setSenha("nova-senha");
+        dto.setCargo("Senior");
+
+        Usuario usuarioExistente = new Usuario();
+        usuarioExistente.setId(1L);
+        usuarioExistente.setNome("Ana");
+        usuarioExistente.setEmail("ana@email.com");
+        usuarioExistente.setSenha("senha-antiga");
+        usuarioExistente.setCargo("Analista");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(usuarioExistente));
+        when(repository.findByEmail(dto.getEmail())).thenReturn(Optional.of(usuarioExistente));
+        when(repository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UsuarioResponseDTO response = service.atualizar(1L, dto);
+
+        assertEquals("Ana Maria", response.getNome());
+        assertEquals("ana@email.com", response.getEmail());
+        assertEquals("Senior", response.getCargo());
+    }
+
+    @Test
+    void atualizarDeveLancarExcecaoQuandoUsuarioNaoExistir() {
+        when(repository.findById(1L)).thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.atualizar(1L, new UsuarioRequestDTO()));
+
+        assertTrue(exception.getMessage().toLowerCase().contains("usuario"));
+    }
+
+    @Test
+    void atualizarDeveLancarExcecaoQuandoEmailJaPertencerAOutroUsuario() {
+        UsuarioRequestDTO dto = new UsuarioRequestDTO();
+        dto.setEmail("duplicado@email.com");
+
+        Usuario usuarioExistente = new Usuario();
+        usuarioExistente.setId(1L);
+
+        Usuario outroUsuario = new Usuario();
+        outroUsuario.setId(2L);
+        outroUsuario.setEmail("duplicado@email.com");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(usuarioExistente));
+        when(repository.findByEmail(dto.getEmail())).thenReturn(Optional.of(outroUsuario));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.atualizar(1L, dto));
+
+        assertTrue(exception.getMessage().contains("email"));
+        verify(repository, never()).save(any(Usuario.class));
+    }
+
+    @Test
+    void deletarDeveRemoverUsuarioQuandoNaoPossuirPendencias() {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(pendenciaRepository.existsByResponsavelId(1L)).thenReturn(false);
+
+        service.deletar(1L);
+
+        verify(repository).delete(usuario);
+    }
+
+    @Test
+    void deletarDeveLancarExcecaoQuandoUsuarioNaoExistir() {
+        when(repository.findById(1L)).thenReturn(Optional.empty());
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.deletar(1L));
+
+        assertTrue(exception.getMessage().toLowerCase().contains("usuario"));
+        verify(repository, never()).delete(any(Usuario.class));
+    }
+
+    @Test
+    void deletarDeveLancarExcecaoQuandoUsuarioPossuirPendencias() {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(pendenciaRepository.existsByResponsavelId(1L)).thenReturn(true);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.deletar(1L));
+
+        assertTrue(exception.getMessage().toLowerCase().contains("pendencias"));
+        verify(repository, never()).delete(any(Usuario.class));
     }
 }

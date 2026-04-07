@@ -25,4 +25,19 @@ public class UsuarioController {
     public List<UsuarioResponseDTO> listar() {
         return service.listar();
     }
+
+    @GetMapping("/{id}")
+    public UsuarioResponseDTO buscarPorId(@PathVariable Long id) {
+        return service.buscarPorId(id);
+    }
+
+    @PutMapping("/{id}")
+    public UsuarioResponseDTO atualizar(@PathVariable Long id, @RequestBody @Valid UsuarioRequestDTO dto) {
+        return service.atualizar(id, dto);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deletar(@PathVariable Long id) {
+        service.deletar(id);
+    }
 }

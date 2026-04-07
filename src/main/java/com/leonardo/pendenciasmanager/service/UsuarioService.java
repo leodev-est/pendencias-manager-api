@@ -4,6 +4,7 @@ import com.leonardo.pendenciasmanager.dto.Request.UsuarioRequestDTO;
 import com.leonardo.pendenciasmanager.dto.Response.UsuarioResponseDTO;
 import com.leonardo.pendenciasmanager.entity.Usuario;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
+import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
 import com.leonardo.pendenciasmanager.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,9 @@ public class UsuarioService {
 
     @Autowired
     private UsuarioRepository repository;
+
+    @Autowired
+    private PendenciaRepository pendenciaRepository;
 
     public UsuarioResponseDTO criar(UsuarioRequestDTO dto) {
         if (repository.existsByEmail(dto.getEmail())) {
@@ -38,6 +42,43 @@ public class UsuarioService {
                 .stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
+    }
+
+    public UsuarioResponseDTO buscarPorId(Long id) {
+        Usuario usuario = repository.findById(id)
+                .orElseThrow(() -> new BusinessException("Usuario nao encontrado."));
+
+        return toResponseDTO(usuario);
+    }
+
+    public UsuarioResponseDTO atualizar(Long id, UsuarioRequestDTO dto) {
+        Usuario usuario = repository.findById(id)
+                .orElseThrow(() -> new BusinessException("Usuario nao encontrado."));
+
+        repository.findByEmail(dto.getEmail())
+                .filter(outroUsuario -> !outroUsuario.getId().equals(id))
+                .ifPresent(outroUsuario -> {
+                    throw new BusinessException("Ja existe um usuario com esse email.");
+                });
+
+        usuario.setNome(dto.getNome());
+        usuario.setEmail(dto.getEmail());
+        usuario.setSenha(dto.getSenha());
+        usuario.setCargo(dto.getCargo());
+
+        Usuario atualizado = repository.save(usuario);
+        return toResponseDTO(atualizado);
+    }
+
+    public void deletar(Long id) {
+        Usuario usuario = repository.findById(id)
+                .orElseThrow(() -> new BusinessException("Usuario nao encontrado."));
+
+        if (pendenciaRepository.existsByResponsavelId(id)) {
+            throw new BusinessException("Usuario possui pendencias vinculadas e nao pode ser removido.");
+        }
+
+        repository.delete(usuario);
     }
 
     private UsuarioResponseDTO toResponseDTO(Usuario usuario) {

@@ -20,9 +20,13 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -121,5 +125,70 @@ class UsuarioControllerTest {
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].nome").value("Ana"))
                 .andExpect(jsonPath("$[0].cargo").value("Analista"));
+    }
+
+    @Test
+    void buscarPorIdDeveRetornarUsuario() throws Exception {
+        UsuarioResponseDTO usuario = new UsuarioResponseDTO();
+        usuario.setId(1L);
+        usuario.setNome("Ana");
+        usuario.setEmail("ana@email.com");
+        usuario.setCargo("Analista");
+
+        when(usuarioService.buscarPorId(1L)).thenReturn(usuario);
+
+        mockMvc.perform(get("/usuarios/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.nome").value("Ana"));
+    }
+
+    @Test
+    void atualizarDeveRetornarUsuarioAtualizado() throws Exception {
+        UsuarioRequestDTO request = new UsuarioRequestDTO();
+        request.setNome("Ana Maria");
+        request.setEmail("ana@email.com");
+        request.setSenha("123456");
+        request.setCargo("Senior");
+
+        UsuarioResponseDTO response = new UsuarioResponseDTO();
+        response.setId(1L);
+        response.setNome("Ana Maria");
+        response.setEmail("ana@email.com");
+        response.setCargo("Senior");
+
+        when(usuarioService.atualizar(eq(1L), any(UsuarioRequestDTO.class))).thenReturn(response);
+
+        mockMvc.perform(put("/usuarios/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Ana Maria"))
+                .andExpect(jsonPath("$.cargo").value("Senior"));
+    }
+
+    @Test
+    void deletarDeveRetornarOk() throws Exception {
+        mockMvc.perform(delete("/usuarios/1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void endpointDeveRetornarBadRequestQuandoUsuarioNaoForEncontrado() throws Exception {
+        when(usuarioService.buscarPorId(99L)).thenThrow(new BusinessException("Usuario nao encontrado"));
+
+        mockMvc.perform(get("/usuarios/99"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value("Usuario nao encontrado"))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void deletarDeveRetornarBadRequestQuandoServiceLancarBusinessException() throws Exception {
+        doThrow(new BusinessException("Usuario possui pendencias vinculadas")).when(usuarioService).deletar(1L);
+
+        mockMvc.perform(delete("/usuarios/1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value("Usuario possui pendencias vinculadas"));
     }
 }
