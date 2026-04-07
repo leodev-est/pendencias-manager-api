@@ -1,67 +1,130 @@
-# 🚀 Pendências Manager API
-
-API REST para gestão de pendências e responsáveis, desenvolvida com Java e Spring Boot.
-
----
-
-## 📌 Objetivo
-
-Este projeto simula um sistema real de acompanhamento de pendências, permitindo organizar tarefas, responsáveis, prazos e status, com foco em boas práticas de backend.
-
----
-
-## 🛠️ Tecnologias utilizadas
-
-- Java 17
-- Spring Boot
-- Spring Web
-- Spring Data JPA
-- H2 Database (em memória)
-- Maven
-- Swagger / OpenAPI
-
----
-
-## ⚙️ Funcionalidades
-
-### 👤 Usuários
-- Criar usuário
-- Listar usuários
-
-### 📋 Pendências
-- Criar pendência
-- Listar pendências
-- Buscar pendência por ID
-- Atualizar pendência
-- Deletar pendência
-
-### 🔎 Filtros
-- Buscar por status
-- Buscar por responsável
 - Listar pendências vencidas
-- Listar pendências dos próximos 7 dias
+- Listar pendências próximas do vencimento
 
 ---
 
-## 🧱 Arquitetura
+## 🏗️ Arquitetura do Projeto
 
-O projeto segue uma arquitetura em camadas:
+O projeto segue o padrão de arquitetura em camadas:
 
-- Controller → entrada das requisições
-- Service → regras de negócio
-- Repository → acesso ao banco
-- DTO → transporte de dados
-- Entity → modelo de dados
-- Exception → tratamento global de erros
+- **Controller** → Recebe as requisições HTTP  
+- **Service** → Contém as regras de negócio  
+- **Repository** → Comunicação com o banco de dados  
+- **Entity** → Representação das tabelas  
+- **DTO** → Transferência de dados entre camadas  
+- **Exception Handler** → Tratamento global de erros  
+
+---
+
+## 🔌 Endpoints (exemplos)
+
+### ➤ Criar pendência
+
+POST /pendencias
+
+
+### ➤ Listar todas
+
+GET /pendencias
+
+
+### ➤ Buscar por ID
+
+GET /pendencias/{id}
+
+
+### ➤ Filtrar por status
+
+GET /pendencias/status/{status}
+
+
+### ➤ Filtrar por responsável
+
+GET /pendencias/responsavel/{nome}
+
 
 ---
 
 ## ▶️ Como executar o projeto
 
 ### Pré-requisitos
-- Java 17 instalado
+- Java 17+
+- Maven
 
-### Rodando localmente
+### Clone o repositório
 
-```bash
+git clone https://github.com/leodev-est/pendencias-manager-api.git
+
+cd pendencias-manager-api
+
+
+### Rodar aplicação
+
+#### Linux / Mac
+
+./mvnw spring-boot:run
+
+
+#### Windows
+
 mvnw.cmd spring-boot:run
+
+
+---
+
+## 📊 Documentação da API
+
+Após rodar o projeto, acesse:
+
+
+http://localhost:8080/swagger-ui.html
+
+
+ou
+
+
+http://localhost:8080/swagger-ui/index.html
+
+
+---
+
+## 🧪 Testes
+
+O projeto possui estrutura preparada para testes unitários e de integração.
+
+(Em evolução)
+
+---
+
+## 📌 Melhorias futuras
+
+- Autenticação e autorização com JWT  
+- Banco de dados PostgreSQL  
+- Deploy em cloud (AWS / Railway / Render)  
+- Testes automatizados mais completos  
+- Integração com front-end  
+
+---
+
+## 💡 Diferenciais do projeto
+
+- Baseado em cenário real de negócio  
+- Aplicação de regras de priorização e vencimento  
+- Estrutura escalável e organizada  
+- Foco em clareza e manutenção de código  
+
+---
+
+## 👨‍💻 Autor
+
+Leonardo Silva Esteves  
+🔗 https://github.com/leodev-est  
+🔗 https://www.linkedin.com/in/leonardo-silva-esteves  
+
+---
+
+## ⭐ Considerações finais
+
+Este projeto faz parte do meu portfólio com foco em desenvolvimento backend e evolução contínua como desenvolvedor.
+
+Se esse projeto te chamou atenção, fico à disposição para trocar ideias ou falar mais sobre minha experiência 🙂
