@@ -1,5 +1,6 @@
 package com.leonardo.pendenciasmanager.dto.Request;
 
+import com.leonardo.pendenciasmanager.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -18,4 +19,6 @@ public class UsuarioRequestDTO {
     private String senha;
 
     private String cargo;
+
+    private Role role;
 }

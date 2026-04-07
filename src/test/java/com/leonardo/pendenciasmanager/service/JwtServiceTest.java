@@ -1,6 +1,7 @@
 package com.leonardo.pendenciasmanager.service;
 
 import com.leonardo.pendenciasmanager.entity.Usuario;
+import com.leonardo.pendenciasmanager.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -25,10 +26,12 @@ class JwtServiceTest {
         Usuario usuario = new Usuario();
         usuario.setEmail("leo@email.com");
         usuario.setSenha("senha-criptografada");
+        usuario.setRole(Role.ADMIN);
 
         String token = jwtService.generateToken(usuario);
 
         assertEquals("leo@email.com", jwtService.extractUsername(token));
+        assertEquals("ADMIN", jwtService.extractRole(token));
         assertTrue(jwtService.isTokenValid(token, usuario));
     }
 }

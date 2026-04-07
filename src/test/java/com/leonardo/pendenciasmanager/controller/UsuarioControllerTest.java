@@ -3,6 +3,7 @@ package com.leonardo.pendenciasmanager.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.leonardo.pendenciasmanager.dto.Request.UsuarioRequestDTO;
 import com.leonardo.pendenciasmanager.dto.Response.UsuarioResponseDTO;
+import com.leonardo.pendenciasmanager.enums.Role;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.exception.GlobalExceptionHandler;
 import com.leonardo.pendenciasmanager.service.UsuarioService;
@@ -61,12 +62,14 @@ class UsuarioControllerTest {
         request.setEmail("leo@email.com");
         request.setSenha("123456");
         request.setCargo("Admin");
+        request.setRole(Role.ADMIN);
 
         UsuarioResponseDTO response = new UsuarioResponseDTO();
         response.setId(1L);
         response.setNome("Leonardo");
         response.setEmail("leo@email.com");
         response.setCargo("Admin");
+        response.setRole(Role.ADMIN);
 
         when(usuarioService.criar(any(UsuarioRequestDTO.class))).thenReturn(response);
 
@@ -76,7 +79,8 @@ class UsuarioControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.nome").value("Leonardo"))
-                .andExpect(jsonPath("$.email").value("leo@email.com"));
+                .andExpect(jsonPath("$.email").value("leo@email.com"))
+                .andExpect(jsonPath("$.role").value("ADMIN"));
     }
 
     @Test
@@ -117,6 +121,7 @@ class UsuarioControllerTest {
         usuario.setNome("Ana");
         usuario.setEmail("ana@email.com");
         usuario.setCargo("Analista");
+        usuario.setRole(Role.USER);
 
         when(usuarioService.listar()).thenReturn(List.of(usuario));
 
@@ -124,7 +129,8 @@ class UsuarioControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].nome").value("Ana"))
-                .andExpect(jsonPath("$[0].cargo").value("Analista"));
+                .andExpect(jsonPath("$[0].cargo").value("Analista"))
+                .andExpect(jsonPath("$[0].role").value("USER"));
     }
 
     @Test
@@ -134,6 +140,7 @@ class UsuarioControllerTest {
         usuario.setNome("Ana");
         usuario.setEmail("ana@email.com");
         usuario.setCargo("Analista");
+        usuario.setRole(Role.USER);
 
         when(usuarioService.buscarPorId(1L)).thenReturn(usuario);
 
@@ -150,12 +157,14 @@ class UsuarioControllerTest {
         request.setEmail("ana@email.com");
         request.setSenha("123456");
         request.setCargo("Senior");
+        request.setRole(Role.ADMIN);
 
         UsuarioResponseDTO response = new UsuarioResponseDTO();
         response.setId(1L);
         response.setNome("Ana Maria");
         response.setEmail("ana@email.com");
         response.setCargo("Senior");
+        response.setRole(Role.ADMIN);
 
         when(usuarioService.atualizar(eq(1L), any(UsuarioRequestDTO.class))).thenReturn(response);
 
@@ -164,7 +173,8 @@ class UsuarioControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nome").value("Ana Maria"))
-                .andExpect(jsonPath("$.cargo").value("Senior"));
+                .andExpect(jsonPath("$.cargo").value("Senior"))
+                .andExpect(jsonPath("$.role").value("ADMIN"));
     }
 
     @Test

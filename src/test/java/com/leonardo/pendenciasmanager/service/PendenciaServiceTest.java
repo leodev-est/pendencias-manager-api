@@ -5,6 +5,7 @@ import com.leonardo.pendenciasmanager.dto.Response.PageResponseDTO;
 import com.leonardo.pendenciasmanager.dto.Response.PendenciaResponseDTO;
 import com.leonardo.pendenciasmanager.entity.Pendencia;
 import com.leonardo.pendenciasmanager.entity.Usuario;
+import com.leonardo.pendenciasmanager.enums.Role;
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
@@ -56,7 +57,7 @@ class PendenciaServiceTest {
 
     @Test
     void criarDeveSalvarPendenciaParaUsuarioAutenticado() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
         PendenciaRequestDTO dto = criarPendenciaRequest();
         Pendencia pendenciaSalva = criarPendencia(1L, dto, usuarioAutenticado);
 
@@ -85,7 +86,7 @@ class PendenciaServiceTest {
 
     @Test
     void listarDeveRetornarPaginaDePendenciasDoUsuarioAutenticado() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
         autenticar(usuarioAutenticado.getEmail());
@@ -104,7 +105,7 @@ class PendenciaServiceTest {
 
     @Test
     void listarDeveAplicarPaginacaoOrdenacaoEFiltrosCombinados() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
         autenticar(usuarioAutenticado.getEmail());
@@ -135,7 +136,7 @@ class PendenciaServiceTest {
 
     @Test
     void listarDeveLancarExcecaoQuandoPageForInvalida() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
 
         autenticar(usuarioAutenticado.getEmail());
         when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
@@ -150,7 +151,7 @@ class PendenciaServiceTest {
 
     @Test
     void listarDeveLancarExcecaoQuandoIntervaloDeDatasForInvalido() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
 
         autenticar(usuarioAutenticado.getEmail());
         when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
@@ -174,7 +175,7 @@ class PendenciaServiceTest {
 
     @Test
     void listarDeveLancarExcecaoQuandoCampoDeOrdenacaoForInvalido() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
 
         autenticar(usuarioAutenticado.getEmail());
         when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
@@ -189,7 +190,7 @@ class PendenciaServiceTest {
 
     @Test
     void listarVencidasDeveConsultarDataAtualEStatusConcluidaDoUsuarioAutenticado() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
         autenticar(usuarioAutenticado.getEmail());
@@ -216,7 +217,7 @@ class PendenciaServiceTest {
 
     @Test
     void listarProximos7DiasDeveConsultarIntervaloCorretoDoUsuarioAutenticado() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
         autenticar(usuarioAutenticado.getEmail());
@@ -242,7 +243,7 @@ class PendenciaServiceTest {
 
     @Test
     void buscarPorIdDeveRetornarPendenciaQuandoPertencerAoUsuarioAutenticado() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
         autenticar(usuarioAutenticado.getEmail());
@@ -257,7 +258,7 @@ class PendenciaServiceTest {
 
     @Test
     void buscarPorIdDeveLancarExcecaoQuandoPendenciaNaoExistir() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
         autenticar(usuarioAutenticado.getEmail());
         when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
         when(pendenciaRepository.findById(99L)).thenReturn(Optional.empty());
@@ -269,8 +270,8 @@ class PendenciaServiceTest {
 
     @Test
     void buscarPorIdDeveLancarExcecaoQuandoPendenciaForDeOutroUsuario() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
-        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
+        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com", Role.USER);
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), outroUsuario);
 
         autenticar(usuarioAutenticado.getEmail());
@@ -284,7 +285,7 @@ class PendenciaServiceTest {
 
     @Test
     void atualizarDeveSalvarPendenciaAtualizadaQuandoPertencerAoUsuarioAutenticado() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
         Pendencia pendenciaExistente = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
         PendenciaRequestDTO dto = criarPendenciaRequest();
         dto.setTitulo("Atualizada");
@@ -302,8 +303,8 @@ class PendenciaServiceTest {
 
     @Test
     void atualizarDeveLancarExcecaoQuandoPendenciaForDeOutroUsuario() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
-        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
+        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com", Role.USER);
         Pendencia pendenciaExistente = criarPendencia(1L, criarPendenciaRequest(), outroUsuario);
 
         autenticar(usuarioAutenticado.getEmail());
@@ -321,7 +322,7 @@ class PendenciaServiceTest {
 
     @Test
     void deletarDeveRemoverPendenciaQuandoPertencerAoUsuarioAutenticado() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
         autenticar(usuarioAutenticado.getEmail());
@@ -335,8 +336,8 @@ class PendenciaServiceTest {
 
     @Test
     void deletarDeveLancarExcecaoQuandoPendenciaForDeOutroUsuario() {
-        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
-        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com");
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com", Role.USER);
+        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com", Role.USER);
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), outroUsuario);
 
         autenticar(usuarioAutenticado.getEmail());
@@ -366,12 +367,79 @@ class PendenciaServiceTest {
         return dto;
     }
 
-    private Usuario criarUsuario(Long id, String nome, String email) {
+    @Test
+    void listarDeveRetornarTodasAsPendenciasQuandoUsuarioForAdmin() {
+        Usuario admin = criarUsuario(99L, "Admin", "admin@email.com", Role.ADMIN);
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), criarUsuario(10L, "Maria", "maria@email.com", Role.USER));
+
+        autenticar(admin.getEmail());
+        when(usuarioRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(pendenciaRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(pendencia)));
+
+        PageResponseDTO<PendenciaResponseDTO> response = service.listar(0, 10, "createdAt,desc", null, null, null, null, null);
+
+        assertEquals(1, response.getContent().size());
+        assertEquals("Maria", response.getContent().get(0).getResponsavelNome());
+    }
+
+    @Test
+    void buscarPorIdDevePermitirAcessoQuandoUsuarioForAdmin() {
+        Usuario admin = criarUsuario(99L, "Admin", "admin@email.com", Role.ADMIN);
+        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com", Role.USER);
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), outroUsuario);
+
+        autenticar(admin.getEmail());
+        when(usuarioRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(pendenciaRepository.findById(1L)).thenReturn(Optional.of(pendencia));
+
+        PendenciaResponseDTO response = service.buscarPorId(1L);
+
+        assertEquals(1L, response.getId());
+        assertEquals("Joao", response.getResponsavelNome());
+    }
+
+    @Test
+    void atualizarDevePermitirAtualizacaoQuandoUsuarioForAdmin() {
+        Usuario admin = criarUsuario(99L, "Admin", "admin@email.com", Role.ADMIN);
+        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com", Role.USER);
+        Pendencia pendenciaExistente = criarPendencia(1L, criarPendenciaRequest(), outroUsuario);
+        PendenciaRequestDTO dto = criarPendenciaRequest();
+        dto.setTitulo("Atualizada pelo admin");
+
+        autenticar(admin.getEmail());
+        when(usuarioRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(pendenciaRepository.findById(1L)).thenReturn(Optional.of(pendenciaExistente));
+        when(pendenciaRepository.save(any(Pendencia.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PendenciaResponseDTO response = service.atualizar(1L, dto);
+
+        assertEquals("Atualizada pelo admin", response.getTitulo());
+        assertEquals("Joao", response.getResponsavelNome());
+    }
+
+    @Test
+    void deletarDevePermitirRemocaoQuandoUsuarioForAdmin() {
+        Usuario admin = criarUsuario(99L, "Admin", "admin@email.com", Role.ADMIN);
+        Usuario outroUsuario = criarUsuario(20L, "Joao", "joao@email.com", Role.USER);
+        Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), outroUsuario);
+
+        autenticar(admin.getEmail());
+        when(usuarioRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
+        when(pendenciaRepository.findById(1L)).thenReturn(Optional.of(pendencia));
+
+        service.deletar(1L);
+
+        verify(pendenciaRepository).delete(pendencia);
+    }
+
+    private Usuario criarUsuario(Long id, String nome, String email, Role role) {
         Usuario usuario = new Usuario();
         usuario.setId(id);
         usuario.setNome(nome);
         usuario.setEmail(email);
         usuario.setCargo("Analista");
+        usuario.setRole(role);
         return usuario;
     }
 

@@ -5,6 +5,7 @@ import com.leonardo.pendenciasmanager.dto.Response.PageResponseDTO;
 import com.leonardo.pendenciasmanager.dto.Response.PendenciaResponseDTO;
 import com.leonardo.pendenciasmanager.entity.Pendencia;
 import com.leonardo.pendenciasmanager.entity.Usuario;
+import com.leonardo.pendenciasmanager.enums.Role;
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
@@ -62,8 +63,13 @@ public class PendenciaService {
         Usuario usuarioAutenticado = getUsuarioAutenticado();
         validarParametrosDeListagem(page, size, dataInicio, dataFim);
         Pageable pageable = criarPageable(page, size, sort);
-        Specification<Pendencia> specification = Specification
-                .where(PendenciaSpecification.doUsuario(usuarioAutenticado.getId()))
+        Specification<Pendencia> specification = isAdmin(usuarioAutenticado)
+                ? Specification.where(PendenciaSpecification.comStatus(status))
+                .and(PendenciaSpecification.comPrioridade(prioridade))
+                .and(PendenciaSpecification.comTermo(termo))
+                .and(PendenciaSpecification.comDataInicio(dataInicio))
+                .and(PendenciaSpecification.comDataFim(dataFim))
+                : Specification.where(PendenciaSpecification.doUsuario(usuarioAutenticado.getId()))
                 .and(PendenciaSpecification.comStatus(status))
                 .and(PendenciaSpecification.comPrioridade(prioridade))
                 .and(PendenciaSpecification.comTermo(termo))
@@ -106,7 +112,13 @@ public class PendenciaService {
     public List<PendenciaResponseDTO> listarPorStatus(StatusPendencia status) {
         Usuario usuarioAutenticado = getUsuarioAutenticado();
 
-        return pendenciaRepository.findByResponsavelIdAndStatus(usuarioAutenticado.getId(), status)
+        List<Pendencia> pendencias = isAdmin(usuarioAutenticado)
+                ? pendenciaRepository.findAll(
+                Specification.where(PendenciaSpecification.comStatus(status))
+        )
+                : pendenciaRepository.findByResponsavelIdAndStatus(usuarioAutenticado.getId(), status);
+
+        return pendencias
                 .stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
@@ -116,12 +128,19 @@ public class PendenciaService {
         Usuario usuarioAutenticado = getUsuarioAutenticado();
         LocalDate hoje = LocalDate.now();
 
-        return pendenciaRepository
-                .findByResponsavelIdAndDataVencimentoBeforeAndStatusNot(
+        List<Pendencia> pendencias = isAdmin(usuarioAutenticado)
+                ? pendenciaRepository.findAll(
+                Specification.where(PendenciaSpecification.comDataFim(hoje.minusDays(1)))
+                        .and((root, query, criteriaBuilder) ->
+                                criteriaBuilder.notEqual(root.get("status"), StatusPendencia.CONCLUIDA))
+        )
+                : pendenciaRepository.findByResponsavelIdAndDataVencimentoBeforeAndStatusNot(
                         usuarioAutenticado.getId(),
                         hoje,
                         StatusPendencia.CONCLUIDA
-                )
+                );
+
+        return pendencias
                 .stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
@@ -132,8 +151,14 @@ public class PendenciaService {
         LocalDate hoje = LocalDate.now();
         LocalDate limite = hoje.plusDays(7);
 
-        return pendenciaRepository
-                .findByResponsavelIdAndDataVencimentoBetween(usuarioAutenticado.getId(), hoje, limite)
+        List<Pendencia> pendencias = isAdmin(usuarioAutenticado)
+                ? pendenciaRepository.findAll(
+                Specification.where(PendenciaSpecification.comDataInicio(hoje))
+                        .and(PendenciaSpecification.comDataFim(limite))
+        )
+                : pendenciaRepository.findByResponsavelIdAndDataVencimentoBetween(usuarioAutenticado.getId(), hoje, limite);
+
+        return pendencias
                 .stream()
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
@@ -155,11 +180,16 @@ public class PendenciaService {
         Pendencia pendencia = pendenciaRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Pendencia nao encontrada."));
 
-        if (pendencia.getResponsavel() == null || !usuarioAutenticado.getId().equals(pendencia.getResponsavel().getId())) {
+        if (!isAdmin(usuarioAutenticado)
+                && (pendencia.getResponsavel() == null || !usuarioAutenticado.getId().equals(pendencia.getResponsavel().getId()))) {
             throw new AccessDeniedException("Acesso negado a esta pendencia.");
         }
 
         return pendencia;
+    }
+
+    private boolean isAdmin(Usuario usuario) {
+        return usuario.getRole() == Role.ADMIN;
     }
 
     private void validarParametrosDeListagem(int page, int size, LocalDate dataInicio, LocalDate dataFim) {

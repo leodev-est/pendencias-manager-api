@@ -3,6 +3,7 @@ package com.leonardo.pendenciasmanager.service;
 import com.leonardo.pendenciasmanager.dto.Request.UsuarioRequestDTO;
 import com.leonardo.pendenciasmanager.dto.Response.UsuarioResponseDTO;
 import com.leonardo.pendenciasmanager.entity.Usuario;
+import com.leonardo.pendenciasmanager.enums.Role;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
 import com.leonardo.pendenciasmanager.repository.UsuarioRepository;
@@ -35,6 +36,7 @@ public class UsuarioService {
         usuario.setEmail(dto.getEmail());
         usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         usuario.setCargo(dto.getCargo());
+        usuario.setRole(dto.getRole() == null ? Role.USER : dto.getRole());
 
         Usuario salvo = repository.save(usuario);
 
@@ -69,6 +71,7 @@ public class UsuarioService {
         usuario.setEmail(dto.getEmail());
         usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         usuario.setCargo(dto.getCargo());
+        usuario.setRole(dto.getRole() == null ? usuario.getRole() : dto.getRole());
 
         Usuario atualizado = repository.save(usuario);
         return toResponseDTO(atualizado);
@@ -91,6 +94,7 @@ public class UsuarioService {
         dto.setNome(usuario.getNome());
         dto.setEmail(usuario.getEmail());
         dto.setCargo(usuario.getCargo());
+        dto.setRole(usuario.getRole());
         return dto;
     }
 }

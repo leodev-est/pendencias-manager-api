@@ -1,5 +1,6 @@
 package com.leonardo.pendenciasmanager.entity;
 
+import com.leonardo.pendenciasmanager.enums.Role;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,6 +24,10 @@ public class Usuario implements UserDetails {
     private String senha;
 
     private String cargo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
 
     public Long getId() {
         return id;
@@ -64,10 +69,18 @@ public class Usuario implements UserDetails {
         this.cargo = cargo;
     }
 
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        String role = (cargo == null || cargo.isBlank()) ? "USER" : cargo.toUpperCase();
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
+        Role authorityRole = role == null ? Role.USER : role;
+        return List.of(new SimpleGrantedAuthority("ROLE_" + authorityRole.name()));
     }
 
     @Override
