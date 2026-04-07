@@ -1,6 +1,7 @@
 package com.leonardo.pendenciasmanager.service;
 
 import com.leonardo.pendenciasmanager.dto.Request.PendenciaRequestDTO;
+import com.leonardo.pendenciasmanager.dto.Response.PageResponseDTO;
 import com.leonardo.pendenciasmanager.dto.Response.PendenciaResponseDTO;
 import com.leonardo.pendenciasmanager.entity.Pendencia;
 import com.leonardo.pendenciasmanager.entity.Usuario;
@@ -15,6 +16,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -79,34 +83,105 @@ class PendenciaServiceTest {
     }
 
     @Test
-    void listarDeveRetornarApenasPendenciasDoUsuarioAutenticado() {
+    void listarDeveRetornarPaginaDePendenciasDoUsuarioAutenticado() {
         Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
         autenticar(usuarioAutenticado.getEmail());
         when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
-        when(pendenciaRepository.findByUsuarioId(10L)).thenReturn(List.of(pendencia));
+        when(pendenciaRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(pendencia)));
 
-        List<PendenciaResponseDTO> response = service.listar();
+        PageResponseDTO<PendenciaResponseDTO> response = service.listar(0, 10, "dataCriacao,desc", null, null, null, null, null);
 
-        assertEquals(1, response.size());
-        assertEquals("Maria", response.get(0).getResponsavelNome());
+        assertEquals(1, response.getContent().size());
+        assertEquals("Maria", response.getContent().get(0).getResponsavelNome());
+        assertEquals(1, response.getTotalElements());
     }
 
     @Test
-    void listarPorStatusDeveFiltrarPendenciasDoUsuarioAutenticado() {
+    void listarDeveAplicarPaginacaoOrdenacaoEFiltrosCombinados() {
         Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
         Pendencia pendencia = criarPendencia(1L, criarPendenciaRequest(), usuarioAutenticado);
 
         autenticar(usuarioAutenticado.getEmail());
         when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
-        when(pendenciaRepository.findByResponsavelIdAndStatus(10L, StatusPendencia.PENDENTE))
-                .thenReturn(List.of(pendencia));
+        when(pendenciaRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(pendencia)));
 
-        List<PendenciaResponseDTO> response = service.listarPorStatus(StatusPendencia.PENDENTE);
+        PageResponseDTO<PendenciaResponseDTO> response = service.listar(
+                0,
+                5,
+                "dataLimite,asc",
+                StatusPendencia.PENDENTE,
+                "Alta",
+                "cliente",
+                LocalDate.of(2026, 4, 1),
+                LocalDate.of(2026, 4, 30)
+        );
 
-        assertEquals(1, response.size());
-        assertEquals(StatusPendencia.PENDENTE, response.get(0).getStatus());
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(pendenciaRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), pageableCaptor.capture());
+
+        assertEquals(1, response.getContent().size());
+        assertEquals(StatusPendencia.PENDENTE, response.getContent().get(0).getStatus());
+        assertEquals(0, pageableCaptor.getValue().getPageNumber());
+        assertEquals(5, pageableCaptor.getValue().getPageSize());
+        assertEquals("dataVencimento: ASC", pageableCaptor.getValue().getSort().toString());
+    }
+
+    @Test
+    void listarDeveLancarExcecaoQuandoPageForInvalida() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> service.listar(-1, 10, "dataCriacao,desc", null, null, null, null, null)
+        );
+
+        assertTrue(exception.getMessage().toLowerCase().contains("page"));
+    }
+
+    @Test
+    void listarDeveLancarExcecaoQuandoIntervaloDeDatasForInvalido() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> service.listar(
+                        0,
+                        10,
+                        "dataCriacao,desc",
+                        null,
+                        null,
+                        null,
+                        LocalDate.of(2026, 4, 30),
+                        LocalDate.of(2026, 4, 1)
+                )
+        );
+
+        assertTrue(exception.getMessage().toLowerCase().contains("datainicio"));
+    }
+
+    @Test
+    void listarDeveLancarExcecaoQuandoCampoDeOrdenacaoForInvalido() {
+        Usuario usuarioAutenticado = criarUsuario(10L, "Maria", "maria@email.com");
+
+        autenticar(usuarioAutenticado.getEmail());
+        when(usuarioRepository.findByEmail(usuarioAutenticado.getEmail())).thenReturn(Optional.of(usuarioAutenticado));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> service.listar(0, 10, "responsavel,asc", null, null, null, null, null)
+        );
+
+        assertTrue(exception.getMessage().toLowerCase().contains("ordenacao"));
     }
 
     @Test

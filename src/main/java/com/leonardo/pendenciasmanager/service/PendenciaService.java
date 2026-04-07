@@ -1,6 +1,7 @@
 package com.leonardo.pendenciasmanager.service;
 
 import com.leonardo.pendenciasmanager.dto.Request.PendenciaRequestDTO;
+import com.leonardo.pendenciasmanager.dto.Response.PageResponseDTO;
 import com.leonardo.pendenciasmanager.dto.Response.PendenciaResponseDTO;
 import com.leonardo.pendenciasmanager.entity.Pendencia;
 import com.leonardo.pendenciasmanager.entity.Usuario;
@@ -8,7 +9,13 @@ import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
 import com.leonardo.pendenciasmanager.repository.PendenciaRepository;
 import com.leonardo.pendenciasmanager.repository.UsuarioRepository;
+import com.leonardo.pendenciasmanager.repository.specification.PendenciaSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,13 +49,37 @@ public class PendenciaService {
         return toResponseDTO(pendenciaRepository.save(pendencia));
     }
 
-    public List<PendenciaResponseDTO> listar() {
+    public PageResponseDTO<PendenciaResponseDTO> listar(
+            int page,
+            int size,
+            String sort,
+            StatusPendencia status,
+            String prioridade,
+            String termo,
+            LocalDate dataInicio,
+            LocalDate dataFim
+    ) {
         Usuario usuarioAutenticado = getUsuarioAutenticado();
+        validarParametrosDeListagem(page, size, dataInicio, dataFim);
+        Pageable pageable = criarPageable(page, size, sort);
+        Specification<Pendencia> specification = Specification
+                .where(PendenciaSpecification.doUsuario(usuarioAutenticado.getId()))
+                .and(PendenciaSpecification.comStatus(status))
+                .and(PendenciaSpecification.comPrioridade(prioridade))
+                .and(PendenciaSpecification.comTermo(termo))
+                .and(PendenciaSpecification.comDataInicio(dataInicio))
+                .and(PendenciaSpecification.comDataFim(dataFim));
 
-        return pendenciaRepository.findByUsuarioId(usuarioAutenticado.getId())
-                .stream()
-                .map(this::toResponseDTO)
-                .collect(Collectors.toList());
+        Page<Pendencia> pendencias = pendenciaRepository.findAll(specification, pageable);
+
+        PageResponseDTO<PendenciaResponseDTO> response = new PageResponseDTO<>();
+        response.setContent(pendencias.getContent().stream().map(this::toResponseDTO).collect(Collectors.toList()));
+        response.setPage(pendencias.getNumber());
+        response.setSize(pendencias.getSize());
+        response.setTotalElements(pendencias.getTotalElements());
+        response.setTotalPages(pendencias.getTotalPages());
+        response.setLast(pendencias.isLast());
+        return response;
     }
 
     public PendenciaResponseDTO buscarPorId(Long id) {
@@ -129,6 +160,52 @@ public class PendenciaService {
         }
 
         return pendencia;
+    }
+
+    private void validarParametrosDeListagem(int page, int size, LocalDate dataInicio, LocalDate dataFim) {
+        if (page < 0) {
+            throw new BusinessException("O parametro page deve ser maior ou igual a zero.");
+        }
+
+        if (size <= 0) {
+            throw new BusinessException("O parametro size deve ser maior que zero.");
+        }
+
+        if (dataInicio != null && dataFim != null && dataInicio.isAfter(dataFim)) {
+            throw new BusinessException("dataInicio nao pode ser maior que dataFim.");
+        }
+    }
+
+    private Pageable criarPageable(int page, int size, String sort) {
+        String sortParam = (sort == null || sort.isBlank()) ? "dataCriacao,desc" : sort;
+        String[] sortParts = sortParam.split(",");
+
+        if (sortParts.length == 0 || sortParts.length > 2 || sortParts[0].isBlank()) {
+            throw new BusinessException("Parametro sort invalido.");
+        }
+
+        String property = mapearCampoOrdenacao(sortParts[0].trim());
+        Sort.Direction direction = Sort.Direction.DESC;
+
+        if (sortParts.length == 2 && !sortParts[1].isBlank()) {
+            try {
+                direction = Sort.Direction.fromString(sortParts[1].trim());
+            } catch (IllegalArgumentException ex) {
+                throw new BusinessException("Direcao de ordenacao invalida.");
+            }
+        }
+
+        return PageRequest.of(page, size, Sort.by(direction, property));
+    }
+
+    private String mapearCampoOrdenacao(String campo) {
+        return switch (campo) {
+            case "dataLimite", "dataVencimento" -> "dataVencimento";
+            case "status" -> "status";
+            case "titulo" -> "titulo";
+            case "dataCriacao" -> "dataCriacao";
+            default -> throw new BusinessException("Campo de ordenacao invalido.");
+        };
     }
 
     private PendenciaResponseDTO toResponseDTO(Pendencia pendencia) {

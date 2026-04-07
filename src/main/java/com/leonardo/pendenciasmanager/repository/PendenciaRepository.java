@@ -3,13 +3,14 @@ package com.leonardo.pendenciasmanager.repository;
 import com.leonardo.pendenciasmanager.entity.Pendencia;
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
 
-public interface PendenciaRepository extends JpaRepository<Pendencia, Long> {
+public interface PendenciaRepository extends JpaRepository<Pendencia, Long>, JpaSpecificationExecutor<Pendencia> {
 
     @Query("select p from Pendencia p where p.responsavel.id = :usuarioId")
     List<Pendencia> findByUsuarioId(@Param("usuarioId") Long usuarioId);

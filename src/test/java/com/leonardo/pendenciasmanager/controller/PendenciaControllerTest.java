@@ -3,6 +3,7 @@ package com.leonardo.pendenciasmanager.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.leonardo.pendenciasmanager.dto.Request.PendenciaRequestDTO;
+import com.leonardo.pendenciasmanager.dto.Response.PageResponseDTO;
 import com.leonardo.pendenciasmanager.dto.Response.PendenciaResponseDTO;
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import com.leonardo.pendenciasmanager.exception.BusinessException;
@@ -25,7 +26,9 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -85,13 +88,56 @@ class PendenciaControllerTest {
     }
 
     @Test
-    void listarDeveRetornarListaDePendencias() throws Exception {
-        when(pendenciaService.listar()).thenReturn(List.of(criarResponse()));
+    void listarDeveRetornarPaginaDePendencias() throws Exception {
+        when(pendenciaService.listar(0, 10, "dataCriacao,desc", null, null, null, null, null))
+                .thenReturn(criarPaginaResponse());
 
         mockMvc.perform(get("/pendencias"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].status").value("PENDENTE"));
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].status").value("PENDENTE"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.last").value(true));
+    }
+
+    @Test
+    void listarDeveEncaminharFiltrosPaginadosParaService() throws Exception {
+        when(pendenciaService.listar(
+                0,
+                5,
+                "dataLimite,asc",
+                StatusPendencia.PENDENTE,
+                "Alta",
+                "cliente",
+                LocalDate.of(2026, 4, 1),
+                LocalDate.of(2026, 4, 30)
+        )).thenReturn(criarPaginaResponse());
+
+        mockMvc.perform(get("/pendencias")
+                        .param("page", "0")
+                        .param("size", "5")
+                        .param("sort", "dataLimite,asc")
+                        .param("status", "PENDENTE")
+                        .param("prioridade", "Alta")
+                        .param("termo", "cliente")
+                        .param("dataInicio", "2026-04-01")
+                        .param("dataFim", "2026-04-30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(1));
+
+        verify(pendenciaService).listar(
+                0,
+                5,
+                "dataLimite,asc",
+                StatusPendencia.PENDENTE,
+                "Alta",
+                "cliente",
+                LocalDate.of(2026, 4, 1),
+                LocalDate.of(2026, 4, 30)
+        );
     }
 
     @Test
@@ -203,6 +249,17 @@ class PendenciaControllerTest {
         response.setOrigem("Sistema");
         response.setResponsavelId(10L);
         response.setResponsavelNome("Maria");
+        return response;
+    }
+
+    private PageResponseDTO<PendenciaResponseDTO> criarPaginaResponse() {
+        PageResponseDTO<PendenciaResponseDTO> response = new PageResponseDTO<>();
+        response.setContent(List.of(criarResponse()));
+        response.setPage(0);
+        response.setSize(10);
+        response.setTotalElements(1);
+        response.setTotalPages(1);
+        response.setLast(true);
         return response;
     }
 }

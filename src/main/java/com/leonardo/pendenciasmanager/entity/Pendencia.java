@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -23,6 +24,8 @@ public class Pendencia {
 
     private LocalDate dataVencimento;
 
+    private LocalDateTime dataCriacao;
+
     private String prioridade;
 
     private String origem;
@@ -30,4 +33,11 @@ public class Pendencia {
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario responsavel;
+
+    @PrePersist
+    public void prePersist() {
+        if (dataCriacao == null) {
+            dataCriacao = LocalDateTime.now();
+        }
+    }
 }

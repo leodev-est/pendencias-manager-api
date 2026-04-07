@@ -1,13 +1,16 @@
 package com.leonardo.pendenciasmanager.controller;
 
 import com.leonardo.pendenciasmanager.dto.Request.PendenciaRequestDTO;
+import com.leonardo.pendenciasmanager.dto.Response.PageResponseDTO;
 import com.leonardo.pendenciasmanager.dto.Response.PendenciaResponseDTO;
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import com.leonardo.pendenciasmanager.service.PendenciaService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -23,8 +26,17 @@ public class PendenciaController {
     }
 
     @GetMapping
-    public List<PendenciaResponseDTO> listar() {
-        return service.listar();
+    public PageResponseDTO<PendenciaResponseDTO> listar(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "dataCriacao,desc") String sort,
+            @RequestParam(required = false) StatusPendencia status,
+            @RequestParam(required = false) String prioridade,
+            @RequestParam(required = false) String termo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim
+    ) {
+        return service.listar(page, size, sort, status, prioridade, termo, dataInicio, dataFim);
     }
 
     @GetMapping("/{id}")
