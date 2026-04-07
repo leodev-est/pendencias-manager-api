@@ -115,6 +115,10 @@ O projeto possui estrutura preparada para testes unitários e de integração.
 
 ---
 
+## 📸 Preview da API (Swagger)
+
+![Swagger Preview](./swagger-preview.png)
+
 ## 👨‍💻 Autor
 
 Leonardo Silva Esteves  
