@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -89,13 +90,15 @@ class PendenciaControllerTest {
 
     @Test
     void listarDeveRetornarPaginaDePendencias() throws Exception {
-        when(pendenciaService.listar(0, 10, "dataCriacao,desc", null, null, null, null, null))
+        when(pendenciaService.listar(0, 10, "createdAt,desc", null, null, null, null, null))
                 .thenReturn(criarPaginaResponse());
 
         mockMvc.perform(get("/pendencias"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1))
                 .andExpect(jsonPath("$.content[0].status").value("PENDENTE"))
+                .andExpect(jsonPath("$.content[0].createdAt").value("2026-04-07T10:30:00"))
+                .andExpect(jsonPath("$.content[0].updatedAt").value("2026-04-07T11:00:00"))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(10))
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -247,6 +250,8 @@ class PendenciaControllerTest {
         response.setDataVencimento(LocalDate.of(2026, 4, 10));
         response.setPrioridade("Alta");
         response.setOrigem("Sistema");
+        response.setCreatedAt(LocalDateTime.of(2026, 4, 7, 10, 30, 0));
+        response.setUpdatedAt(LocalDateTime.of(2026, 4, 7, 11, 0, 0));
         response.setResponsavelId(10L);
         response.setResponsavelNome("Maria");
         return response;

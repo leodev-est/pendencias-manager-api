@@ -177,7 +177,7 @@ public class PendenciaService {
     }
 
     private Pageable criarPageable(int page, int size, String sort) {
-        String sortParam = (sort == null || sort.isBlank()) ? "dataCriacao,desc" : sort;
+        String sortParam = (sort == null || sort.isBlank()) ? "createdAt,desc" : sort;
         String[] sortParts = sortParam.split(",");
 
         if (sortParts.length == 0 || sortParts.length > 2 || sortParts[0].isBlank()) {
@@ -203,7 +203,8 @@ public class PendenciaService {
             case "dataLimite", "dataVencimento" -> "dataVencimento";
             case "status" -> "status";
             case "titulo" -> "titulo";
-            case "dataCriacao" -> "dataCriacao";
+            case "dataCriacao", "createdAt" -> "createdAt";
+            case "updatedAt" -> "updatedAt";
             default -> throw new BusinessException("Campo de ordenacao invalido.");
         };
     }
@@ -217,6 +218,8 @@ public class PendenciaService {
         dto.setDataVencimento(pendencia.getDataVencimento());
         dto.setPrioridade(pendencia.getPrioridade());
         dto.setOrigem(pendencia.getOrigem());
+        dto.setCreatedAt(pendencia.getCreatedAt());
+        dto.setUpdatedAt(pendencia.getUpdatedAt());
         dto.setResponsavelId(pendencia.getResponsavel().getId());
         dto.setResponsavelNome(pendencia.getResponsavel().getNome());
         return dto;

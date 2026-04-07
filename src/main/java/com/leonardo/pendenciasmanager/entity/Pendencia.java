@@ -3,6 +3,8 @@ package com.leonardo.pendenciasmanager.entity;
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,7 +26,13 @@ public class Pendencia {
 
     private LocalDate dataVencimento;
 
-    private LocalDateTime dataCriacao;
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 
     private String prioridade;
 
@@ -33,11 +41,4 @@ public class Pendencia {
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario responsavel;
-
-    @PrePersist
-    public void prePersist() {
-        if (dataCriacao == null) {
-            dataCriacao = LocalDateTime.now();
-        }
-    }
 }

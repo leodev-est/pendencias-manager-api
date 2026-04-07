@@ -29,7 +29,7 @@ public class PendenciaController {
     public PageResponseDTO<PendenciaResponseDTO> listar(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "dataCriacao,desc") String sort,
+            @RequestParam(defaultValue = "createdAt,desc") String sort,
             @RequestParam(required = false) StatusPendencia status,
             @RequestParam(required = false) String prioridade,
             @RequestParam(required = false) String termo,

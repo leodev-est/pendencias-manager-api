@@ -23,6 +23,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -92,11 +93,13 @@ class PendenciaServiceTest {
         when(pendenciaRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(pendencia)));
 
-        PageResponseDTO<PendenciaResponseDTO> response = service.listar(0, 10, "dataCriacao,desc", null, null, null, null, null);
+        PageResponseDTO<PendenciaResponseDTO> response = service.listar(0, 10, "createdAt,desc", null, null, null, null, null);
 
         assertEquals(1, response.getContent().size());
         assertEquals("Maria", response.getContent().get(0).getResponsavelNome());
         assertEquals(1, response.getTotalElements());
+        assertEquals(LocalDateTime.of(2026, 4, 7, 10, 30, 0), response.getContent().get(0).getCreatedAt());
+        assertEquals(LocalDateTime.of(2026, 4, 7, 11, 0, 0), response.getContent().get(0).getUpdatedAt());
     }
 
     @Test
@@ -139,7 +142,7 @@ class PendenciaServiceTest {
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
-                () -> service.listar(-1, 10, "dataCriacao,desc", null, null, null, null, null)
+                () -> service.listar(-1, 10, "createdAt,desc", null, null, null, null, null)
         );
 
         assertTrue(exception.getMessage().toLowerCase().contains("page"));
@@ -157,7 +160,7 @@ class PendenciaServiceTest {
                 () -> service.listar(
                         0,
                         10,
-                        "dataCriacao,desc",
+                        "createdAt,desc",
                         null,
                         null,
                         null,
@@ -381,6 +384,8 @@ class PendenciaServiceTest {
         pendencia.setDataVencimento(dto.getDataVencimento());
         pendencia.setPrioridade(dto.getPrioridade());
         pendencia.setOrigem(dto.getOrigem());
+        pendencia.setCreatedAt(LocalDateTime.of(2026, 4, 7, 10, 30, 0));
+        pendencia.setUpdatedAt(LocalDateTime.of(2026, 4, 7, 11, 0, 0));
         pendencia.setResponsavel(responsavel);
         return pendencia;
     }

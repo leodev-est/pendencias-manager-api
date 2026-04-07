@@ -3,6 +3,7 @@ package com.leonardo.pendenciasmanager.dto.Response;
 import com.leonardo.pendenciasmanager.enums.StatusPendencia;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class PendenciaResponseDTO {
 
@@ -13,6 +14,8 @@ public class PendenciaResponseDTO {
     private LocalDate dataVencimento;
     private String prioridade;
     private String origem;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private Long responsavelId;
     private String responsavelNome;
 
@@ -70,6 +73,22 @@ public class PendenciaResponseDTO {
 
     public void setOrigem(String origem) {
         this.origem = origem;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public Long getResponsavelId() {
