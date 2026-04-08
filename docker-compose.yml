@@ -28,7 +28,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8080
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pendenciasmanager
+      SPRING_DATASOURCE_URL: postgresql://postgres:5432/pendenciasmanager
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_DATASOURCE_USERNAME: pendencias
       SPRING_DATASOURCE_PASSWORD: pendencias123
