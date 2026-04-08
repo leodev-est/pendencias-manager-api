@@ -11,10 +11,18 @@ services:
         value: 8080
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      - key: DATABASE_URL
+      - key: DB_HOST
         fromDatabase:
           name: pendencias-manager-db
-          property: connectionString
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: pendencias-manager-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: pendencias-manager-db
+          property: database
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: pendencias-manager-db
