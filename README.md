@@ -1,167 +1,91 @@
-# 📌 Pendências Manager API
+# Pendencias Manager API
 
-API REST para gerenciamento de pendências e tarefas, com controle de responsáveis, status e prazos.
+API REST para gerenciamento de pendencias e tarefas com autenticacao JWT, controle de ownership, roles, auditoria e documentacao OpenAPI.
 
-Projeto desenvolvido com foco em boas práticas de desenvolvimento backend, arquitetura em camadas e aplicação de regras de negócio reais.
+## Stack
 
----
+- Java 17
+- Spring Boot
+- Spring Security
+- Spring Data JPA
+- PostgreSQL
+- H2 para desenvolvimento e testes
+- Docker e Docker Compose
+- Swagger / OpenAPI
 
-## 🚀 Objetivo
+## Funcionalidades
 
-Este projeto foi criado para demonstrar habilidades em desenvolvimento backend com Java e Spring Boot, incluindo:
+- CRUD de usuarios
+- CRUD de pendencias
+- Autenticacao com JWT
+- Controle de acesso com roles `USER` e `ADMIN`
+- Ownership para proteger registros por usuario autenticado
+- Paginacao, filtros e ordenacao
+- Auditoria de criacao e atualizacao
+- Testes unitarios e de integracao
 
-- Construção de APIs REST  
-- Organização em arquitetura em camadas  
-- Modelagem de dados e regras de negócio  
-- Integração com banco de dados  
-- Documentação de endpoints  
+## Executando localmente
 
-A ideia do sistema simula um cenário real de gestão de pendências, comum em ambientes corporativos, com controle por responsável, status e vencimento.
+### Opcao 1: Spring Boot com banco em memoria
 
----
-
-## 💻 Tecnologias utilizadas
-
-- Java 17  
-- Spring Boot  
-- Spring Web  
-- Spring Data JPA  
-- H2 Database  
-- Maven  
-- Swagger / OpenAPI  
-
----
-
-## 🧠 Regras de Negócio
-
-- Cada pendência possui um responsável  
-- Pendências podem ter status (PENDENTE, EM_ANDAMENTO, CONCLUIDO)  
-- Pendências vencidas podem ser identificadas  
-- Filtro por status  
-- Filtro por responsável  
-- Listagem de pendências próximas do vencimento  
-- Tratamento de pendências sem data  
-
----
-
-## 📚 Funcionalidades
-
-- Criar pendência  
-- Listar todas as pendências  
-- Buscar pendência por ID  
-- Atualizar pendência  
-- Deletar pendência  
-- Filtrar por status  
-- Filtrar por responsável  
-- Listar pendências vencidas  
-- Listar pendências próximas do vencimento  
-
----
-
-## 🏗️ Arquitetura do Projeto
-
-- Controller → recebe requisições HTTP  
-- Service → regras de negócio  
-- Repository → acesso a dados  
-- Entity → representação das entidades  
-- DTO → transferência de dados  
-- Exception Handler → tratamento de erros  
-
----
-
-## 🔌 Endpoints
-
-- POST /pendencias  
-- GET /pendencias  
-- GET /pendencias/{id}  
-- PUT /pendencias/{id}  
-- DELETE /pendencias/{id}  
-- GET /pendencias/vencidas  
-- GET /pendencias/status  
-- GET /pendencias/responsavel/{responsavelId}  
-- GET /pendencias/proximos-7-dias  
-- GET /usuarios  
-- POST /usuarios  
-
----
-
-## ▶️ Como executar o projeto
-
-### Pré-requisitos
-
-- Java 17+  
-- Maven  
-
-### Clone o repositório
-
-```bash
-git clone https://github.com/leodev-est/pendencias-manager-api.git
-cd pendencias-manager-api
-```
-
-### Rodar no Windows
+No Windows:
 
 ```bash
 mvnw.cmd spring-boot:run
 ```
 
-### Rodar no Linux ou Mac
+No Linux ou macOS:
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
----
+### Opcao 2: Docker Compose com PostgreSQL
 
-## 📊 Documentação da API
+```bash
+docker compose up --build
+```
 
-Após rodar o projeto:
+## Documentacao da API
 
-- http://localhost:8080/swagger-ui.html  
-- http://localhost:8080/swagger-ui/index.html  
+Com a aplicacao em execucao:
 
----
-
-## 📸 Preview da API
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
 ![Swagger Preview](./swagger-preview.png)
 
----
+## Deploy
 
-## 🧪 Testes
+O projeto esta preparado para deploy no Render usando o blueprint `render.yaml`.
 
-Estrutura preparada para testes unitários e de integração.
+- Guia de deploy: `DEPLOY.md`
+- Perfil de producao: `src/main/resources/application-prod.properties`
 
----
+### URL publica
 
-## 📌 Melhorias futuras
+- API: pendente de publicacao no provedor
+- Swagger: pendente de publicacao no provedor
 
-- Autenticação com JWT  
-- Banco PostgreSQL  
-- Deploy em cloud  
-- Testes automatizados  
-- Integração com front-end  
+Depois do primeiro deploy, substitua os campos acima pela URL real gerada pela plataforma.
 
----
+## Variaveis de ambiente de producao
 
-## 💡 Diferenciais
+- `SPRING_PROFILES_ACTIVE=prod`
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+- `SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver`
+- `SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect`
+- `SPRING_JPA_HIBERNATE_DDL_AUTO=update`
+- `JWT_SECRET`
+- `JWT_EXPIRATION`
+- `PORT`
 
-- Baseado em cenário real de negócio  
-- Aplicação de regras de status, responsável e vencimento  
-- Estrutura organizada e escalável  
-- Foco em código limpo e manutenção  
+## Repositorio
 
----
+- GitHub: `https://github.com/leodev-est/pendencias-manager-api`
 
-## 👨‍💻 Autor
+## Autor
 
-Leonardo Silva Esteves  
-
-GitHub: https://github.com/leodev-est  
-LinkedIn: https://www.linkedin.com/in/leonardo-silva-esteves  
-
----
-
-## ⭐ Considerações finais
-
-Projeto desenvolvido como parte do portfólio com foco em backend Java e evolução contínua como desenvolvedor.
+Leonardo Silva Esteves
