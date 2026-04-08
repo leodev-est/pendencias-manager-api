@@ -16,7 +16,7 @@ Este projeto esta preparado para deploy em producao no Render com banco PostgreS
 
 - `PORT`
 - `SPRING_PROFILES_ACTIVE`
-- `SPRING_DATASOURCE_URL`
+- `DATABASE_URL`
 - `SPRING_DATASOURCE_USERNAME`
 - `SPRING_DATASOURCE_PASSWORD`
 - `SPRING_DATASOURCE_DRIVER_CLASS_NAME`

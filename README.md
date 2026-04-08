@@ -72,7 +72,7 @@ Depois do primeiro deploy, substitua os campos acima pela URL real gerada pela p
 ## Variaveis de ambiente de producao
 
 - `SPRING_PROFILES_ACTIVE=prod`
-- `SPRING_DATASOURCE_URL`
+- `DATABASE_URL`
 - `SPRING_DATASOURCE_USERNAME`
 - `SPRING_DATASOURCE_PASSWORD`
 - `SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver`
